@@ -1,0 +1,115 @@
+@page "/Checkout"
+@using Blazored.FluentValidation
+@inject IProductStore Store
+
+<PageTitle>Checkout</PageTitle>
+
+<h1>Checkout</h1>
+
+@if (Command != null)
+{
+    <EditForm Model="Command" method="post" OnValidSubmit="SubmitOrder" FormName="checkout">
+        <FluentValidationValidator DisableAssemblyScanning="@true"/>
+        
+        <ValidationSummary/>
+        
+        <h4>Ship To:</h4>
+        <div>
+            <label>Name</label>
+            <InputText @bind-Value="Command.BillingAddress.Name"/>
+
+        </div>
+        <div>
+            <label>Address 1</label>
+            <InputText @bind-Value="Command.BillingAddress.AddressLine1"/>
+        </div>
+        <div>
+            <label>Address 2</label>
+            <InputText @bind-Value="Command.BillingAddress.AddressLine2"/>
+        </div>
+        <div>
+            <label>City</label>
+            <InputText @bind-Value="Command.BillingAddress.City"/>
+        </div>
+        <div>
+            <label>Post Code</label>
+            <InputText @bind-Value="Command.BillingAddress.PostCode"/>
+        </div>
+        <button type="submit">Place Order</button>
+    </EditForm>
+}
+
+@if (submitted)
+{
+    <div class="orderSummary">
+        <p>Hey, look at that, you placed the order!</p>
+        <h2>Order Summary</h2>
+
+        <h3>Shipping To:</h3>
+        <dl>
+            <dt>Name</dt>
+            <dd>@Command.BillingAddress.Name</dd>
+            <dt>Address 1</dt>
+            <dd>@Command.BillingAddress.AddressLine1</dd>
+            <dt>Address 2</dt>
+            <dd>@Command.BillingAddress.AddressLine2</dd>
+            <dt>City</dt>
+            <dd>@Command.BillingAddress.City</dd>
+            <dt>Post Code</dt>
+            <dd>@Command.BillingAddress.PostCode</dd>
+        </dl>
+    </div>
+}
+
+@code {
+
+    public interface IProductStore
+    {
+        PlaceOrderCommand GetCheckout();
+    }
+
+    public class ProductStore : IProductStore
+    {
+        public PlaceOrderCommand GetCheckout()
+        {
+            return new PlaceOrderCommand();
+        }
+    }
+
+    public record PlaceOrderCommand
+    {
+        public Address BillingAddress { get; set; } = new();
+
+        public class Address
+        {
+            public string Name { get; set; } = string.Empty;
+
+            public string AddressLine1 { get; set; }
+            public string AddressLine2 { get; set; }
+            public string City { get; set; }
+            public string PostCode { get; set; }
+        }
+    }
+
+    //RC2
+    [CascadingParameter] public HttpContext? Context { get; set; }
+    
+    [SupplyParameterFromForm]
+    public PlaceOrderCommand? Command { get; set; }
+
+    private EditContext? editContext;
+
+    protected override void OnInitialized()
+    {
+        Command ??= Store.GetCheckout();
+        editContext = new(Command);
+    }
+
+    bool submitted = false;
+
+    private void SubmitOrder()
+    {
+        submitted = true;
+    }
+
+}
